@@ -1,0 +1,42 @@
+{
+  "products": {
+    "Star Wars Lightsaber Replica": "This limited edition lightsaber replica is a true collector's item for any Star Wars fan. Made from high-quality materials, it looks and feels just like the lightsaber wielded by Luke Skywalker in the original trilogy. The hilt is detailed and accurate, and the blade lights up with a bright, realistic glow.",
+    "Vintage GI Joe Action Figure": "This vintage GI Joe action figure from the 1980s is a classic piece of toy history. Made from durable plastic, it features realistic details and moveable joints, allowing for hours of imaginative play. This particular figure is in excellent condition and comes with all its original accessories.",
+    "Rare Spider-Man Comic Book": "This rare Spider-Man comic book from the 1960s is a true gem for any comic book collector. It features an early appearance of the Green Goblin and is in excellent condition for its age. The colors are bright and vibrant, and the pages are crisp and clean.",
+    "Harry Potter Wand Set": "This set of Harry Potter wands is a must-have for any fan of the series. It includes replicas of the wands used by Harry, Ron, and Hermione, and each wand is made from high-quality materials and features intricate details. The wands come in a beautiful display case and are perfect for adding to a collection or for cosplay.",
+    "Ghostbusters Proton Pack Replica": "This collectible Ghostbusters proton pack replica is a perfect replica of the iconic prop from the original movie. It features authentic details, including working lights and sound effects, and is made from high-quality materials that will stand the test of time. ",
+    "Avengers: Endgame Signed Poster": "This signed poster from the cast of Avengers: Endgame is a true collector's item. It features the signatures of all the main cast members, including Robert Downey Jr., Chris Evans, and Scarlett Johansson, and comes in a beautiful frame that is ready to hang on your wall. ",
+    "Lord of the Rings Figurine Set": "This hand-painted Lord of the Rings figurine set is a beautiful addition to any collection. Featuring the members of the Fellowship of the Ring, including Gandalf, Aragorn, Frodo, and Sam, each figurine is meticulously crafted and painted to bring out every detail. Whether you're a fan of the books or the movies, this figurine set is a must-have.",
+    "Joker Funko Pop Figure": "This rare Funko Pop figure of the Joker from the Batman: The Animated Series is a must-have for any fan of the show or the character. It features the Joker in his classic outfit, complete with his trademark grin and green hair. The figure is made from high-quality materials and comes in its original packaging.",
+    "Jurassic Park T-Rex Statue": "This limited edition Jurassic Park T-Rex statue is a true work of art. Made from high-quality resin, it features intricate details and is hand-painted to bring out every nuance. The statue is large and imposing, making it a perfect centerpiece for any collection or display.",
+    "Star Trek Autographed Script": "This autographed script from the original Star Trek series is a true piece of TV history. It features the signatures of William Shatner and Leonard Nimoy and is in excellent condition for its age. Whether you're a die-hard Trekkie or just a fan of classic TV, this autographed script is a must-have for any collection."
+  },
+  "tones": {
+    "Conversational": "Write an email as a friend who's interested in the same hobby as you, telling them about a new item. Use a conversational tone to make it feel like you're catching up over coffee or chatting on the phone. Be sure to include details about why you love this item and how it fits into your collection or hobby.",
+    "Formal": "Use a formal tone to convey professionalism and authority. Start with a clear subject line and a formal salutation. Use precise and concise language.",
+    "Humurous": "Use a humorous tone to make the email engaging and entertaining. Start with a catchy subject line that piques their interest and includes a playful pun or joke. Use humorous language to describe the product and its features. End the email with a call-to-action that encourages the customers to try the product and provide feedback.",
+    "Urgent": "Use an urgent tone to create a sense of urgency and encourage them to take immediate action. Start with a subject line that conveys the urgency of the offer and includes a clear call-to-action. Use language that emphasizes the scarcity of the offer and the benefits that the customers will receive by acting quickly."
+  },
+  "genders": [
+    "Male",
+    "Female",
+    "Non-binary",
+    "Unknown"
+  ],
+  "demographics": [
+    "",
+    "College Student",
+    "New Parent"
+  ],
+  "segment": [
+    "",
+    "Collectors",
+    "Marvel Fan",
+    "DC Fan",
+    "Star Wars Fan",
+    "Film Enthusiast",
+    "Gift Shoppers",
+    "Cosplayers"
+  ],
+  "system_prompt": "Cool Collectibles is an online retailer that specializes in collectible toys and relics that operates solely in the US.  They carry a variety of inventory, ranging from antique movie set items to mass-produced toys for popular franchises, like the Marvel Cinematic Universe and Star Wars.  You are a marketer writing custom emails to customers. After each customer description, respond with the body of an email promoting the specified product."
+}
