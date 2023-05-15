@@ -1,0 +1,44 @@
+{
+    "contacts": {
+      "TechFusion": {
+        "industry": "Technology",
+        "contact_type": "Inquiry about event planning services for their upcoming company retreat."
+      },
+      "Foodie Frenzy": {
+        "industry": "Food and Beverage",
+        "contact_type": "Request for proposal for an upcoming food and wine festival."
+      },
+      "EduNation": {
+        "industry": "Education",
+        "contact_type": "Request for consultation on planning a series of educational seminars and workshops."
+      },
+      "MindfulWorks": {
+        "industry": "Health and Wellness",
+        "contact_type": "Request for full-service event planning for their annual mindfulness conference."
+      },
+      "Trendy Threads": {
+        "industry": "Fashion and Apparel",
+        "contact_type": "Request for assistance with planning a fashion show to showcase their latest collection."
+      },
+      "Green Energy Solutions": {
+        "industry": "Renewable Energy",
+        "contact_type": "Request for proposal for planning a networking event for industry professionals."
+      },
+      "Destination Weddings": {
+        "industry": "Wedding and Event Planning",
+        "contact_type": "Request for assistance with coordinating a destination wedding in a tropical location."
+      },
+      "Future Innovations": {
+        "industry": "Research and Development",
+        "contact_type": "Request for proposal for planning an industry conference to showcase the latest innovations."
+      },
+      "Wellness Retreats": {
+        "industry": "Travel and Hospitality",
+        "contact_type": "Request for consultation on planning a wellness retreat for their guests."
+      },
+      "SportsZone": {
+        "industry": "Sports and Fitness",
+        "contact_type": "Request for full-service event planning for their annual charity sports tournament."
+      }
+    }
+  }

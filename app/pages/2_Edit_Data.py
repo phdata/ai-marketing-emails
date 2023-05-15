@@ -9,9 +9,11 @@ def save(data, filename):
     st.success(f"Saved {filename}")
 
 
-def main(data, data_file):
+def main():
     st.header("Edit Data")
+    data_file = st.selectbox("Data File", ["app/data.json", "app/contacts.json"])
     data_file = Path(data_file)
+    data = json.load(open(data_file))
     if st.button("Backup File"):
         backup_file = data_file.with_name(
             f"{data_file.stem}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.json"
@@ -62,6 +64,4 @@ def main(data, data_file):
             save(data, data_file)
 
 
-DATA_FILE = "app/data.json"
-data = json.load(open(DATA_FILE))
-main(data, DATA_FILE)
+main()

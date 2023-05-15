@@ -1,9 +1,8 @@
 import streamlit as st
-import openai
-import os
 import json
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+from utils import submit_prompt
+
 
 def main(data):
     products = data["products"]
@@ -54,16 +53,9 @@ def main(data):
 
         # create a chat completion
         with st.spinner("Generating..."):
-            chat_completion = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": final_prompt},
-                ],
-            )
+            submit_prompt(system_prompt, final_prompt)
         st.success("Done!")
-        # print the chat completion
-        st.write(chat_completion.choices[0].message.content)
+
 
 DATA_FILE = "app/data.json"
 data = json.load(open(DATA_FILE))
