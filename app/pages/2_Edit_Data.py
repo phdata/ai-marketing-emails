@@ -60,3 +60,8 @@ def main(data, data_file):
         if st.button("Save"):
             data[data_field] = value
             save(data, data_file)
+
+
+DATA_FILE = "app/data.json"
+data = json.load(open(DATA_FILE))
+main(data, DATA_FILE)

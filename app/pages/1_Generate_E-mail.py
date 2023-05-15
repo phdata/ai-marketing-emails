@@ -1,7 +1,9 @@
 import streamlit as st
 import openai
-import keyring
+import os
+import json
 
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 def main(data):
     products = data["products"]
@@ -49,7 +51,6 @@ def main(data):
     # Create a button to call the OpenAI API
     if st.button("Generate Email"):
         # Load your API key from an environment variable or secret management service
-        openai.api_key = keyring.get_password("openai", "secret")
 
         # create a chat completion
         with st.spinner("Generating..."):
@@ -63,3 +64,7 @@ def main(data):
         st.success("Done!")
         # print the chat completion
         st.write(chat_completion.choices[0].message.content)
+
+DATA_FILE = "app/data.json"
+data = json.load(open(DATA_FILE))
+main(data)
