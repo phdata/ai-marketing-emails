@@ -1,7 +1,6 @@
 name: sf_env
 channels:
 - https://repo.anaconda.com/pkgs/snowflake
-- conda-forge
 - nodefaults
 dependencies:
 - python>=3.8
@@ -10,6 +9,4 @@ dependencies:
 - plotly
 - black
 - flake8
-- openai
-- keyring
 - watchdog
