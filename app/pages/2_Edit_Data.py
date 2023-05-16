@@ -11,7 +11,7 @@ def save(data, filename):
 
 def main():
     st.header("Edit Data")
-    data_file = st.selectbox("Data File", ["app/data.json", "app/contacts.json"])
+    data_file = st.selectbox("Data File", ["app/cool_collectibles.json", "app/extraordinary_events.json"])
     data_file = Path(data_file)
     data = json.load(open(data_file))
     if st.button("Backup File"):
@@ -35,10 +35,13 @@ def main():
                     save(data, data_file)
 
         key = st.selectbox("Key", data[data_field].keys(), key="selectkeys")
-        value = st.text_area("Value", data[data_field][key], height=200)
+
+        json_data = json.dumps(data[data_field][key], indent=2)
+        user_entered_json = st.text_area("Value", json_data, height=200)
+        parsed_json = json.loads(user_entered_json)
 
         if st.button("Save"):
-            data[data_field][key] = value
+            data[data_field][key] = parsed_json
             save(data, data_file)
     elif isinstance(data[data_field], list):
         for row in data[data_field]:

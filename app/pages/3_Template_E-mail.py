@@ -21,25 +21,14 @@ st.header("Generate Email using a Template")
 # Current date using natural language
 current_date = time.strftime("%B %d, %Y")
 
+company_data = json.load(open("app/extraordinary_events.json"))
+contacts = company_data['contacts']
+
 system_prompt = st.text_area(
     "System Prompt",
-    f"""You are a sales representative for Extraordinary Events, an event-planning
-business that focuses on the planning and execution of marketing events for
-other companies.  Current date: {current_date}. You are writing emails as concisely
-as possible to potential customers that the company recently had contact with.
-You are trying to start a relationship with this company and find out what needs
-they have.  The email should be very brief.  Write an effective call to action
-using action-oriented language and creating a sense of urgency.
-
-Hi [Company Name],
-[Short greeting]
-[Respond to method of contact]
-[Call to action]
-Sincerely,
-Peter Hansen""",
+    company_data['system_prompt'].format(current_date=current_date),
     height=400,
 )
-contacts = json.load(open("app/contacts.json"))["contacts"]
 
 st.subheader("Select a contact or Generate All")
 all_emails = st.button("Generate All Emails")

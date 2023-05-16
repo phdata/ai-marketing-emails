@@ -57,6 +57,6 @@ def main(data):
         st.success("Done!")
 
 
-DATA_FILE = "app/data.json"
+DATA_FILE = "app/cool_collectibles.json"
 data = json.load(open(DATA_FILE))
 main(data)
