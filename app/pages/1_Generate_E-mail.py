@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 
-from utils import submit_prompt
+from aimarketing.utils import submit_prompt
 
 
 def main(data):

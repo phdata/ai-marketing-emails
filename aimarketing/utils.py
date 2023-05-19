@@ -1,8 +1,24 @@
 import streamlit as st
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 import os
 import datetime
 import json
 import requests
+
+from aimarketing.snowflake_utils import get_snowpark_session
+
+
+def get_session():
+    using_streamlit = get_script_run_ctx() is not None
+    if using_streamlit and "snowflake_session" in st.session_state:
+        return st.session_state.snowflake_session
+
+    session = get_snowpark_session()
+
+    if using_streamlit:
+        st.session_state.snowflake_session = session
+
+    return session
 
 
 def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
@@ -22,9 +38,20 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
         "Authorization": "Bearer " + os.environ.get("OPENAI_API_KEY"),
     }
 
-    response = requests.post(
-        url, headers=headers, data=json.dumps(payload), stream=True
-    )
+    # retry until response is valid
+    retry = 0
+    while retry < 5:
+        response = requests.post(
+            url, headers=headers, data=json.dumps(payload), stream=True
+        )
+        if response.status_code == 200:
+            break
+        else:
+            print(f"Error: {response.status_code}")
+            print(response.text)
+            retry += 1
+            if retry == 5:
+                raise Exception("Failed to get response from OpenAI")
 
     response_container = st.empty()
     collected_messages = []
@@ -44,12 +71,12 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
 
 
 def parse_stream(rbody):
+    prefix = b"data: "
+    len_prefix = len(prefix)
     for line in rbody:
         if line:
             if line.strip() == b"data: [DONE]":
-                # return here will cause GeneratorExit exception in urllib3
-                # and it will close http connection with TCP Reset
                 return
-            elif line.startswith(b"data: "):
-                line = line[len(b"data: "):]
+            elif line.startswith(prefix):
+                line = line[len_prefix:]
                 yield json.loads(line.decode("utf-8"))

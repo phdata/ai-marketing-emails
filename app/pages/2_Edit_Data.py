@@ -35,10 +35,13 @@ def main():
                     save(data, data_file)
 
         key = st.selectbox("Key", data[data_field].keys(), key="selectkeys")
-
-        json_data = json.dumps(data[data_field][key], indent=2)
-        user_entered_json = st.text_area("Value", json_data, height=200)
-        parsed_json = json.loads(user_entered_json)
+        value = data[data_field][key]
+        if not isinstance(value, str):
+            value = json.dumps(value, indent=2)
+            user_entered_json = st.text_area("Value", value, height=200)
+            parsed_json = json.loads(user_entered_json)
+        else:
+            parsed_json = st.text_area("Value", value, height=200)
 
         if st.button("Save"):
             data[data_field][key] = parsed_json
