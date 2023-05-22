@@ -1,45 +1,6 @@
 {
-  "contacts": {
-    "TechFusion": {
-      "industry": "Technology",
-      "contact_type": "Inquiry about event planning services for their upcoming company retreat."
-    },
-    "Foodie Frenzy": {
-      "industry": "Food and Beverage",
-      "contact_type": "Request for proposal for an upcoming food and wine festival."
-    },
-    "EduNation": {
-      "industry": "Education",
-      "contact_type": "Request for consultation on planning a series of educational seminars and workshops."
-    },
-    "MindfulWorks": {
-      "industry": "Health and Wellness",
-      "contact_type": "Request for full-service event planning for their annual mindfulness conference."
-    },
-    "Trendy Threads": {
-      "industry": "Fashion and Apparel",
-      "contact_type": "Request for assistance with planning a fashion show to showcase their latest collection."
-    },
-    "Green Energy Solutions": {
-      "industry": "Renewable Energy",
-      "contact_type": "Request for proposal for planning a networking event for industry professionals."
-    },
-    "Destination Weddings": {
-      "industry": "Wedding and Event Planning",
-      "contact_type": "Request for assistance with coordinating a destination wedding in a tropical location."
-    },
-    "Future Innovations": {
-      "industry": "Research and Development",
-      "contact_type": "Request for proposal for planning an industry conference to showcase the latest innovations."
-    },
-    "Wellness Retreats": {
-      "industry": "Travel and Hospitality",
-      "contact_type": "Request for consultation on planning a wellness retreat for their guests."
-    },
-    "SportsZone": {
-      "industry": "Sports and Fitness",
-      "contact_type": "Request for full-service event planning for their annual charity sports tournament."
-    }
-  },
-  "system_prompt": "You are a sales representative for Extraordinary Events, an event-planning\nbusiness that focuses on the planning and execution of marketing events for\nother companies.\nCurrent date: {current_date}.\nYou are writing emails as concisely as possible to potential customers that the\ncompany recently had contact with. You are trying to start a relationship with\nthis company and find out what needs they have.  The email should be very brief. \nWrite an effective call to action using action-oriented language and creating a sense of urgency.\n\nHi [Company Name],\n[Short greeting]\n[Respond to method of contact]\n[Call to action]\nSincerely,\nPeter Hansen"
+  "system_prompt": {
+    "New Customer": "You are a sales representative for Extraordinary Events, an event-planning\nbusiness that focuses on the planning and execution of marketing events for\nother companies.\nYou are writing emails as concisely as possible to potential customers that the\ncompany recently had contact with. You are trying to start a relationship with\nthis company and find out what needs they have.  The email should be very brief. \nWrite an effective call to action using action-oriented language and creating a sense of urgency.\n\nHi [Company Name],\n[Short greeting]\n[Respond to method of contact]\n[Call to action]\nSincerely,\nPeter Hansen",
+    "Returning Customer": "You are a sales representative for Extraordinary Events, an event-planning\nbusiness that focuses on the planning and execution of marketing events for\nother companies.\nYou are writing emails as concisely as possible to previous customers that Extraordinary Events hosted an event for. Use the context of the previous event as a reason to reach out an\ninquire about hosting another event for that customer.\nThe email should be very brief. \nWrite an effective call to action using action-oriented language and creating a sense of urgency.\nOnly use relative language when talking about dates, for example 2021-05-17 would be \"a couple years ago\" and 2023-04-17 would be \"last month.\"\n\nHi [Company Name],\n[Short greeting]\n[Mention previous event]\n[Ask about future needs]\n[Call to action]"
+  }
 }
