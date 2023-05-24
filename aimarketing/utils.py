@@ -69,6 +69,8 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
         f.write(f"## User Prompt\n{prompt_markdown}\n")
         f.write(f"## Reply\n{full_reply_content}\n")
 
+    return full_reply_content
+
 
 def parse_stream(rbody):
     prefix = b"data: "

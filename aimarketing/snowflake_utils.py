@@ -81,15 +81,16 @@ def get_snowsql_config(
                 session_config.pop("private_key_path")
             )
         return session_config_dict
-    except Exception:
-        raise Exception("Error getting snowsql config details")
+    except Exception as e:
+        raise Exception(f"Error getting snowsql config details: {e}")
 
 
 def get_private_key(path):
     with open(os.path.expanduser(path), "rb") as key:
+        PRIVATE_KEY_PASSPHRASE = os.environ.get("PRIVATE_KEY_PASSPHRASE", "")
         p_key = serialization.load_pem_private_key(
             key.read(),
-            password=os.environ["PRIVATE_KEY_PASSPHRASE"].encode(),
+            password=PRIVATE_KEY_PASSPHRASE.encode(),
             backend=default_backend(),
         )
 

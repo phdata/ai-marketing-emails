@@ -1,6 +1,13 @@
 import click
 from aimarketing.utils import get_session
-from snowflake.snowpark.types import StructType, StructField, StringType, DateType
+
+from snowflake.snowpark.types import (
+    StructType,
+    StructField,
+    StringType,
+    DateType,
+    IntegerType,
+)
 
 from pathlib import Path
 
@@ -18,9 +25,10 @@ def main():
     )
     user_schema = StructType(
         [
+            StructField("UID", IntegerType()),
             StructField("COMPANY_NAME", StringType()),
-            StructField("SALES_REP", StringType()),
-            StructField("SALES_REP_EMAIL", StringType()),
+            StructField("CONTACT_NAME", StringType()),
+            StructField("CONTACT_EMAIL", StringType()),
             StructField("INDUSTRY", StringType()),
             StructField("PREVIOUS_EVENT", StringType()),
             StructField("PREVIOUS_EVENT_DATE", DateType()),
@@ -31,10 +39,28 @@ def main():
     session.sql("drop table if exists copied_into_table").collect()
     df = (
         session.read.schema(user_schema)
-        .options(dict(SKIP_HEADER=1, FIELD_OPTIONALLY_ENCLOSED_BY='"', FIELD_DELIMITER=","))
+        .options(
+            dict(SKIP_HEADER=1, FIELD_OPTIONALLY_ENCLOSED_BY='"', FIELD_DELIMITER=",")
+        )
         .csv("@temp_stage/extraordinary_events")
     )
     df.copy_into_table("SALES_CONTACTS", force=True)
+
+    session.sql("create or replace stage udf_stage").collect()
+    session.udf.register_from_file(
+        file_path="aimarketing/date_utils.py",
+        func_name="humanize_date",
+        name="humanize_date",
+        is_permanent=True,
+        replace=True,
+        stage_location="@udf_stage",
+    )
+
+    print(
+        session.sql(
+            "select humanize_date(date_from_parts(2022,12,1), date_from_parts(2023,5,22)) as event;"
+        ).collect()
+    )
 
 
 if __name__ == "__main__":
