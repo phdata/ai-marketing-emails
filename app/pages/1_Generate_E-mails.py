@@ -147,7 +147,7 @@ def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
     )
 
 
-st.header("Generate Email using a Template")
+st.header(":snowflake: Generate Email using a Snowflake Data")
 
 campaign = Campaign(st.selectbox("Email Campaign", Campaign.names))
 

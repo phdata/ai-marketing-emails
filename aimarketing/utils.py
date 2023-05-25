@@ -91,7 +91,8 @@ def humanize_with_gpt(
 
     payload = {
         "model": "text-davinci-003",
-        "prompt": f"""Q: The current date is May 25th, 2023. How long ago is May 18th, 2023?
+        "prompt": f"""Answer each question about dates. Prefer imprecise but accurate answers like "last month" instead of "four weeks ago" and "last week" instead of "5 days ago".
+Q: The current date is May 25th, 2023. How long ago is May 18th, 2023?
 A: last Thursday
 
 Q: The current date is October 9th, 2023. How long ago is May 18th, 2023?
@@ -102,6 +103,9 @@ A: last weekend
 
 Q: The current date is April 3rd, 2021. How long ago is December 15th, 2020
 A: a few months ago
+
+Q: The current date is July 3rd, 2023. How long ago is April 2nd, 2021
+A: a couple years back
 
 Q: The current date is Wednesday, August 17th, 2022. How long ago is Saturday, August 6th, 2022?
 A: a couple weeks ago

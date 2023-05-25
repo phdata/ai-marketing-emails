@@ -11,7 +11,7 @@ def save(data, filename):
 
 def main():
     st.header("Edit Data")
-    data_file = st.selectbox("Data File", ["app/cool_collectibles.json", "app/extraordinary_events.json"])
+    data_file = st.selectbox("Data File", ["app/extraordinary_events.json"])
     data_file = Path(data_file)
     data = json.load(open(data_file))
     if st.button("Backup File"):
