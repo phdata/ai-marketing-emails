@@ -82,3 +82,63 @@ def parse_stream(rbody):
             elif line.startswith(prefix):
                 line = line[len_prefix:]
                 yield json.loads(line.decode("utf-8"))
+
+
+def humanize_with_gpt(
+    date: datetime.date, current_date: datetime.date = datetime.date.today()
+):
+    url = "https://api.openai.com/v1/completions"
+
+    payload = {
+        "model": "text-davinci-003",
+        "prompt": f"""Q: The current date is May 25th, 2023. How long ago is May 18th, 2023?
+A: last Thursday
+
+Q: The current date is October 9th, 2023. How long ago is May 18th, 2023?
+A: last May
+
+Q: The current date is Monday, May 22nd, 2023. How long ago is Saturday, May 20th, 2023?
+A: last weekend
+
+Q: The current date is April 3rd, 2021. How long ago is December 15th, 2020
+A: a few months ago
+
+Q: The current date is Wednesday, August 17th, 2022. How long ago is Saturday, August 6th, 2022?
+A: a couple weeks ago
+
+Q: The current date is {current_date.strftime("%A, %B %d, %Y")}. How long ago is {date.strftime("%A, %B %d, %Y")}?
+A:""",
+        "temperature": 0.0,
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + os.environ.get("OPENAI_API_KEY"),
+    }
+
+    # retry until response is valid
+    retry = 0
+    while retry < 5:
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            break
+        else:
+            print(f"Error: {response.status_code}")
+            print(response.text)
+            retry += 1
+            if retry == 5:
+                raise Exception("Failed to get response from OpenAI")
+
+    return json.loads(response.content)["choices"][0]["text"]
+
+
+if __name__ == "__main__":
+    current_date = datetime.date.today()
+
+    for i in range(0, 45, 3):
+        date = current_date - datetime.timedelta(days=i)
+        print(date, "=>", humanize_with_gpt(date, current_date))
+
+    for i in range(45, 600, 30):
+        date = current_date - datetime.timedelta(days=i)
+        print(date, "=>", humanize_with_gpt(date, current_date))

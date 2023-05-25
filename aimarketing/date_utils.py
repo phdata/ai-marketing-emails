@@ -42,8 +42,12 @@ def humanize_date(
 
 
 if __name__ == "__main__":
-    current_date = datetime.date = datetime.date.today()
+    current_date = datetime.date.today()
 
-    for i in range(0, 600, 1):
+    for i in range(0, 45, 1):
         date = current_date - datetime.timedelta(days=i)
-        print(date, "=>", humanize_date(date))
+        print(date, "=>", humanize_date(date, current_date))
+
+    for i in range(45, 600, 30):
+        date = current_date - datetime.timedelta(days=i)
+        print(date, "=>", humanize_date(date, current_date))
