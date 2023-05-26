@@ -16,5 +16,27 @@
 
 ```bash
 conda env create --file environment.yml --prefix ./.venv
+conda activate ./.venv
 pip install -e .
+```
+
+## Setup Snowflake Connector
+Create `~/.snowsql/config`
+```toml
+[connections.aws]
+accountname = ACCOUNT_IDENTIFIER
+username = USERNAME
+dbname = SANDBOX
+schemaname = AI_MARKETING
+warehousename = PHDATA
+rolename = DATASCIENCE
+private_key_path = /path/to//rsa_key.p8
+```
+If you want to authenticate with password, replace `private_key_path` with `password`. The Snowflake Python connector expects an environment variable "PRIVATE_KEY_PASSPHRASE" to use the specified private key.
+
+## Run
+```bash
+export OPENAI_API_KEY="sk-****"
+python sql/setup.py
+python -m streamlit run app/main.py
 ```

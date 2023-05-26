@@ -44,6 +44,7 @@ class Campaign:
     """
 
     names = ["Returning Customer", "New Customer"]
+    TABLE_NAME = "SALES_CONTACTS"
 
     def __init__(self, campaign_name):
         self.campaign_name = campaign_name
@@ -79,9 +80,16 @@ class Campaign:
 
     def get_table(self):
         session = get_session()
-        contacts_table = session.table("SALES_CONTACTS")
+        contacts_table = session.table(self.TABLE_NAME)
         contacts_table = contacts_table.filter(self.filter_expr)
         return contacts_table
+
+    def get_system_prompt(self, with_date=False):
+        if with_date:
+            prompt = self.system_prompt_with_date()
+        else:
+            prompt = self.system_prompt
+        return re.sub("^[ \t]+|[ \t]+$", "", prompt, flags=re.MULTILINE)
 
     def system_prompt_with_date(self, current_date=date.today()):
         today = current_date.strftime("%B %d, %Y")
@@ -91,9 +99,7 @@ class Campaign:
         Only use relative language when talking about dates,
         for example {couple_years_ago} would be "a couple years ago" and {last_month} would be "last month."
         """
-        return re.sub(
-            "^[ \t]+|[ \t]+$", "", date_prompt + self.system_prompt, flags=re.MULTILINE
-        )
+        return date_prompt + self.system_prompt
 
     def __hash__(self) -> int:
         return self.campaign_name.__hash__() + self.system_prompt.__hash__()
@@ -131,7 +137,7 @@ def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
     if uid:
         table = table.filter(col("UID") == uid)
 
-    system_prompt = campaign.system_prompt_with_date(current_date)
+    system_prompt = campaign.get_system_prompt()
     return table.select(
         current_session(),
         col("CONTACT_EMAIL"),
@@ -148,16 +154,25 @@ def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
 
 
 st.header(":snowflake: Generate Email using a Snowflake Data")
+st.markdown(
+    """This application serves an interface for using GPT-3 to generate emails for contacts in a Snowflake Data.
+First, you can select from a list of email campaigns. Depending on the campaign, a prewritten prompt is shown."""
+)
+
 
 campaign = Campaign(st.selectbox("Email Campaign", Campaign.names))
 
 campaign.system_prompt = st.text_area(
     "System Prompt",
     campaign.system_prompt,
-    height=400,
+    height=300,
 )
 contacts = get_contacts(campaign)
 st.subheader("Select contact data")
+st.markdown(
+    "In addition, the email campaign specifies which set of contacts to retrieve from the Snowflake table."
+)
+st.info(f"Found {len(contacts)} contacts in the {campaign.TABLE_NAME} table")
 all_data = st.checkbox("Generate Emails for All Contacts")
 if all_data:
     prompts_df = eval_gpt_prompts(campaign)

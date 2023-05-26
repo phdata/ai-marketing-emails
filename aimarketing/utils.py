@@ -4,6 +4,7 @@ import os
 import datetime
 import json
 import requests
+import re
 
 from aimarketing.snowflake_utils import get_snowpark_session
 
@@ -59,7 +60,9 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
         chunk_message = chunk["choices"][0]["delta"]
         collected_messages.append(chunk_message)
         full_reply_content = "".join([m.get("content", "") for m in collected_messages])
-        response_container.write(full_reply_content)
+
+        formatted_reply = re.sub(r"\n+", "\n\n", full_reply_content, flags=re.MULTILINE)
+        response_container.markdown(formatted_reply)
 
     with open("app/log.md", "a") as f:
         f.write(f"# {datetime.datetime.now()}\n")
@@ -67,9 +70,9 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
         f.write(f"## System Prompt\n{prompt_markdown}\n")
         prompt_markdown = "  \n".join(user_prompt.split("\n"))
         f.write(f"## User Prompt\n{prompt_markdown}\n")
-        f.write(f"## Reply\n{full_reply_content}\n")
+        f.write(f"## Reply\n{formatted_reply}\n")
 
-    return full_reply_content
+    return formatted_reply
 
 
 def parse_stream(rbody):
@@ -89,29 +92,33 @@ def humanize_with_gpt(
 ):
     url = "https://api.openai.com/v1/completions"
 
+    cd = current_date.strftime("%A, %B %d, %Y")
+    d = date.strftime("%A, %B %d, %Y")
     payload = {
         "model": "text-davinci-003",
-        "prompt": f"""Answer each question about dates. Prefer imprecise but accurate answers like "last month" instead of "four weeks ago" and "last week" instead of "5 days ago".
-Q: The current date is May 25th, 2023. How long ago is May 18th, 2023?
-A: last Thursday
+        "prompt": f"""Answer each question about dates. Prefer imprecise but
+        accurate answers like "last month" instead of "four weeks ago" and "last
+        week" instead of "5 days ago".
+        Q: The current date is May 25th, 2023. How long ago is May 18th, 2023?
+        A: last Thursday
 
-Q: The current date is October 9th, 2023. How long ago is May 18th, 2023?
-A: last May
+        Q: The current date is October 9th, 2023. How long ago is May 18th, 2023?
+        A: last May
 
-Q: The current date is Monday, May 22nd, 2023. How long ago is Saturday, May 20th, 2023?
-A: last weekend
+        Q: The current date is Monday, May 22nd, 2023. How long ago is Saturday, May 20th, 2023?
+        A: last weekend
 
-Q: The current date is April 3rd, 2021. How long ago is December 15th, 2020
-A: a few months ago
+        Q: The current date is April 3rd, 2021. How long ago is December 15th, 2020
+        A: a few months ago
 
-Q: The current date is July 3rd, 2023. How long ago is April 2nd, 2021
-A: a couple years back
+        Q: The current date is July 3rd, 2023. How long ago is April 2nd, 2021
+        A: a couple years back
 
-Q: The current date is Wednesday, August 17th, 2022. How long ago is Saturday, August 6th, 2022?
-A: a couple weeks ago
+        Q: The current date is Wednesday, August 17th, 2022. How long ago is Saturday, August 6th, 2022?
+        A: a couple weeks ago
 
-Q: The current date is {current_date.strftime("%A, %B %d, %Y")}. How long ago is {date.strftime("%A, %B %d, %Y")}?
-A:""",
+        Q: The current date is {cd}. How long ago is {d}?
+        A:""",
         "temperature": 0.0,
     }
 

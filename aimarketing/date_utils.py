@@ -11,6 +11,8 @@ def humanize_date(
     :param current_date: The current date.
     :return: A human-readable version of the date.
     """
+    if date is None:
+        return None
     delta = current_date - date
     year_delta = current_date.year - date.year
     month_delta = current_date.month - date.month
