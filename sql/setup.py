@@ -13,7 +13,8 @@ from pathlib import Path
 
 
 @click.command()
-def main():
+@click.option("--drop-tables", is_flag=True, help="Drop all tables")
+def main(drop_tables):
     session = get_session()
 
     session.sql("drop table if exists SANDBOX.AI_MARKETING.SALES_CONTACTS").collect()
@@ -61,6 +62,23 @@ def main():
             "select humanize_date(date_from_parts(2022,12,1), date_from_parts(2023,5,22)) as event;"
         ).collect()
     )
+
+    session.sql(
+        """create or replace view SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS_LATEST(
+            UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL
+        ) as
+        SELECT UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL
+        FROM (
+            SELECT UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL,
+                ROW_NUMBER() OVER (PARTITION BY UID ORDER BY TIMESTAMP DESC) AS rn
+            FROM GPT_EMAIL_PROMPTS
+        ) t
+        WHERE rn = 1;"""
+    )
+    if drop_tables:
+        session.sql(
+            "drop table if exists SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS"
+        ).collect()
 
 
 if __name__ == "__main__":
