@@ -1,8 +1,9 @@
 import streamlit as st
 import json
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import pandas as pd
 import re
+import logging
 
 from aimarketing.utils import submit_prompt, get_session
 from snowflake.snowpark.functions import (
@@ -102,7 +103,9 @@ class Campaign:
         return date_prompt + self.system_prompt
 
     def __hash__(self) -> int:
-        return self.campaign_name.__hash__() + self.system_prompt.__hash__()
+        hash = self.campaign_name.__hash__() + self.system_prompt.__hash__()
+        logging.info(hash)
+        return hash
 
 
 @st.cache
@@ -140,7 +143,9 @@ def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
     system_prompt = campaign.get_system_prompt()
     return table.select(
         current_session(),
+        col("UID"),
         col("CONTACT_EMAIL"),
+        lit(campaign.campaign_name).alias("CAMPAIGN_NAME"),
         lit(system_prompt).alias("SYSTEM_PROMPT"),
         user_prompt_udf(
             col("COMPANY_NAME"),
@@ -197,21 +202,33 @@ if st.button("Generate"):
 
             if bar:
                 bar.progress((i + 1) / len(prompts_df))
-    prompts_response = pd.concat([prompts_df, emails], axis=1).reset_index()
 
-    # Write to Snowflake
+            prompts_response = pd.concat(
+                [prompts_df.loc[[contact_id]], emails.loc[[contact_id]]], axis=1
+            )
 
-    output_table_name = "GPT_EMAIL_PROMPTS"
-    write_result = get_session().write_pandas(
-        prompts_response,
-        output_table_name,
-        auto_create_table=True,
-    )
-    full_output_table_name = (
-        get_session().get_current_database()
-        + "."
-        + get_session().get_current_schema()
-        + "."
-        + output_table_name
-    )
-    st.success(f"Wrote {len(prompts_response)} rows to `{full_output_table_name}`")
+            prompts_response["TIMESTAMP"] = datetime.now()
+            prompts_response["TIMESTAMP"] = (
+                prompts_response["TIMESTAMP"]
+                .astype("datetime64[ns]")
+                .dt.tz_localize("UTC")
+            )
+
+            # Write to Snowflake
+
+            output_table_name = "GPT_EMAIL_PROMPTS"
+            write_result = get_session().write_pandas(
+                prompts_response,
+                output_table_name,
+                auto_create_table=True,
+            )
+            full_output_table_name = (
+                get_session().get_current_database()
+                + "."
+                + get_session().get_current_schema()
+                + "."
+                + output_table_name
+            )
+            st.success(
+                f"Wrote {len(prompts_response)} rows to `{full_output_table_name}`"
+            )

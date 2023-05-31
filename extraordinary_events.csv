@@ -1,21 +1,21 @@
 UID,COMPANY_NAME,CONTACT_NAME,CONTACT_EMAIL,INDUSTRY,PREVIOUS_EVENT,PREVIOUS_EVENT_DATE,NOTES
-1,TechFusion,Michael Thompson,michael.thompson@techfusion.com,Technology,,,Inquiry about event planning services for their upcoming company retreat.
-2,Foodie Frenzy,Emily Parker,emily.parker@foodiefrenzy.com,Food and Beverage,,,Request for proposal for an upcoming food and wine festival.
-3,EduNation,Ethan Roberts,ethan.roberts@edunation.com,Education,,,Request for consultation on planning a series of educational seminars and workshops.
-4,MindfulWorks,Olivia Morgan,olivia.morgan@mindfulworks.com,Health and Wellness,,,Request for full-service event planning for their annual mindfulness conference.
-5,Trendy Threads,Benjamin Collins,benjamin.collins@trendythreads.com,Fashion and Apparel,,,Request for assistance with planning a fashion show to showcase their latest collection.
-6,Green Energy Solutions,Sophia Reed,sophia.reed@greenenergysolutions.com,Renewable Energy,,,Request for proposal for planning a networking event for industry professionals.
-7,Destination Weddings,Matthew Hernandez,matthew.hernandez@destinationweddings.com,Wedding and Event Planning,,,Request for assistance with coordinating a destination wedding in a tropical location.
-8,Future Innovations,Ava Murphy,ava.murphy@futureinnovations.com,Research and Development,,,Request for proposal for planning an industry conference to showcase the latest innovations.
-9,Wellness Retreats,William Foster,william.foster@wellnessretreats.com,Travel and Hospitality,,,Request for consultation on planning a wellness retreat for their guests.
-10,SportsZone,Isabella Brooks,isabella.brooks@sportszone.com,Sports and Fitness,,,Request for full-service event planning for their annual charity sports tournament.
-11,Stellar Solutions,James Butler,james.butler@stellarsolutions.com,Technology,TechExpo,8/15/2022,Sales rep mentioned quarterly product launches
-12,Bold Brands,Mia Davis,mia.davis@boldbrands.com,Consumer Goods,Product Launch Party,6/30/2022,Possibility of hosting an exclusive party to have celebrities promote brand.
-13,Fusion Foods,Alexander Watson,alexander.watson@fusionfoods.com,Food and Beverage,Tasty Treats Showcase,2/12/2023,yearly new product launches.
-14,Summit Sports,Charlotte Stewart,charlotte.stewart@summitsports.com,Sports,Championship Gala,11/18/2023,Celebrated the victory of their sponsored athlete in a major sporting event
-15,Elite Elixirs,Daniel Price,daniel.price@eliteelixirs.com,Health and Wellness,Wellness Fair,4/2/2023,Provided free samples of their new line of herbal supplements
-16,InnoTech Solutions,Harper Turner,harper.turner@innotechsolutions.com,Information Technology,Innovators Conference,9/22/2022,Conducted a workshop on cutting-edge technology trends. Possibility of hosting again this fall
-17,Style Savvy,David Coleman,david.coleman@stylesavvy.com,Fashion,Fashion Show,5/5/2023,Recently started working with a new fashion designer
-18,Nature's Haven,Amelia Bennett,amelia.bennett@natureshaven.com,Environmental,Green Expo,3/11/2023,"Showcased eco-friendly products and services, suggest a follow up executive dinner."
-19,Media Moguls,Samuel Nelson,samuel.nelson@mediamoguls.com,Entertainment,Red Carpet Event,7/25/2022,New movie releases on September 1
-20,Fresh Foods,Grace Mitchell,grace.mitchell@freshfoods.com,Grocery,Employee Appreciation Night,11/10/2022,Recently mentioned wanting to plan a summer picnic and holiday party.
+301,TechFusion,Michael Thompson,michael.thompson@techfusion.com,Technology,,,Inquiry about event planning services for their upcoming company retreat.
+551,Foodie Frenzy,Emily Parker,emily.parker@foodiefrenzy.com,Food and Beverage,,,Request for proposal for an upcoming food and wine festival.
+101,EduNation,Ethan Roberts,ethan.roberts@edunation.com,Education,,,Request for consultation on planning a series of educational seminars and workshops.
+201,MindfulWorks,Olivia Morgan,olivia.morgan@mindfulworks.com,Health and Wellness,,,Request for full-service event planning for their annual mindfulness conference.
+152,Trendy Threads,Benjamin Collins,benjamin.collins@trendythreads.com,Fashion and Apparel,,,Request for assistance with planning a fashion show to showcase their latest collection.
+651,Green Energy Solutions,Sophia Reed,sophia.reed@greenenergysolutions.com,Renewable Energy,,,Request for proposal for planning a networking event for industry professionals.
+153,Destination Weddings,Matthew Hernandez,matthew.hernandez@destinationweddings.com,Wedding and Event Planning,,,Request for assistance with coordinating a destination wedding in a tropical location.
+403,Future Innovations,Ava Murphy,ava.murphy@futureinnovations.com,Research and Development,,,Request for proposal for planning an industry conference to showcase the latest innovations.
+501,Wellness Retreats,William Foster,william.foster@wellnessretreats.com,Travel and Hospitality,,,Request for consultation on planning a wellness retreat for their guests.
+402,SportsZone,Isabella Brooks,isabella.brooks@sportszone.com,Sports and Fitness,,,Request for full-service event planning for their annual charity sports tournament.
+601,Stellar Solutions,James Butler,james.butler@stellarsolutions.com,Technology,TechExpo,8/15/2022,Sales rep mentioned quarterly product launches
+451,Bold Brands,Mia Davis,mia.davis@boldbrands.com,Consumer Goods,Product Launch Party,6/30/2022,Possibility of hosting an exclusive party to have celebrities promote brand.
+652,Fusion Foods,Alexander Watson,alexander.watson@fusionfoods.com,Food and Beverage,Tasty Treats Showcase,2/12/2023,yearly new product launches.
+251,Summit Sports,Charlotte Stewart,charlotte.stewart@summitsports.com,Sports,Championship Gala,11/18/2023,Celebrated the victory of their sponsored athlete in a major sporting event
+351,Elite Elixirs,Daniel Price,daniel.price@eliteelixirs.com,Health and Wellness,Wellness Fair,4/2/2023,Provided free samples of their new line of herbal supplements
+401,InnoTech Solutions,Harper Turner,harper.turner@innotechsolutions.com,Information Technology,Innovators Conference,9/22/2022,Conducted a workshop on cutting-edge technology trends. Possibility of hosting again this fall
+751,Style Savvy,David Coleman,david.coleman@stylesavvy.com,Fashion,Fashion Show,5/5/2023,Recently started working with a new fashion designer
+151,Nature's Haven,Amelia Bennett,amelia.bennett@natureshaven.com,Environmental,Green Expo,3/11/2023,"Showcased eco-friendly products and services, suggest a follow up executive dinner."
+701,Media Moguls,Samuel Nelson,samuel.nelson@mediamoguls.com,Entertainment,Red Carpet Event,7/25/2022,New movie releases on September 1
+202,Fresh Foods,Grace Mitchell,grace.mitchell@freshfoods.com,Grocery,Employee Appreciation Night,11/10/2022,Recently mentioned wanting to plan a summer picnic and holiday party.
