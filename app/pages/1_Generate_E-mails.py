@@ -158,12 +158,11 @@ def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
     )
 
 
-st.header(":snowflake: Generate Email using a Snowflake Data")
+st.header(":snowflake: Generate Email using Snowflake Data")
 st.markdown(
-    """This application serves an interface for using GPT-3 to generate emails for contacts in a Snowflake Data.
+    """This application serves as an interface for using GPT-3 to generate emails for contacts in Snowflake Data.
 First, you can select from a list of email campaigns. Depending on the campaign, a prewritten prompt is shown."""
 )
-
 
 campaign = Campaign(st.selectbox("Email Campaign", Campaign.names))
 
