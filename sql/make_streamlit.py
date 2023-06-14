@@ -38,12 +38,6 @@ def main(update):
         overwrite=True,
         auto_compress=False,
     )
-    session.file.put(
-        "environment.yml",
-        "@generate_email_stage",
-        overwrite=True,
-        auto_compress=False,
-    )
     session.sql(
         f"""
     create or replace STREAMLIT generate_email

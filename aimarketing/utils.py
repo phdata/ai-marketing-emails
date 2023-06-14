@@ -1,4 +1,3 @@
-import streamlit as st
 import os
 import datetime
 import json
@@ -6,7 +5,18 @@ import requests
 import re
 
 
-def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
+def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
+    import _snowflake
+
+    os.environ["OPENAI_API_KEY"] = _snowflake.get_generic_secret_string(
+        "OPENAI_API_KEY"
+    )
+    return submit_prompt(system_prompt, user_prompt, False, False)
+
+
+def submit_prompt(
+    system_prompt: str, user_prompt: str, use_streamlit: bool = True, log: bool = True
+) -> str:
     url = "https://api.openai.com/v1/chat/completions"
 
     payload = {
@@ -15,7 +25,7 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        "stream": True,
+        "stream": use_streamlit,
     }
 
     headers = {
@@ -27,7 +37,7 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
     retry = 0
     while retry < 5:
         response = requests.post(
-            url, headers=headers, data=json.dumps(payload), stream=True
+            url, headers=headers, data=json.dumps(payload), stream=use_streamlit
         )
         if response.status_code == 200:
             break
@@ -38,23 +48,32 @@ def submit_prompt(system_prompt, user_prompt, log=True, openai=False):
             if retry == 5:
                 raise Exception("Failed to get response from OpenAI")
 
-    response_container = st.empty()
-    collected_messages = []
-    for chunk in parse_stream(response.iter_lines()):
-        chunk_message = chunk["choices"][0]["delta"]
-        collected_messages.append(chunk_message)
-        full_reply_content = "".join([m.get("content", "") for m in collected_messages])
-
+    if use_streamlit:
+        import streamlit as st
+        response_container = st.empty()
+        collected_messages = []
+        for chunk in parse_stream(response.iter_lines()):
+            chunk_message = chunk["choices"][0]["delta"]
+            collected_messages.append(chunk_message)
+            full_reply_content = "".join(
+                [m.get("content", "") for m in collected_messages]
+            )
+            formatted_reply = re.sub(
+                r"\n+", "\n\n", full_reply_content, flags=re.MULTILINE
+            )
+            response_container.markdown(formatted_reply)
+    else:
+        full_reply_content = response.json()["choices"][0]["message"]["content"]
         formatted_reply = re.sub(r"\n+", "\n\n", full_reply_content, flags=re.MULTILINE)
-        response_container.markdown(formatted_reply)
 
-    with open("app/log.md", "a") as f:
-        f.write(f"# {datetime.datetime.now()}\n")
-        prompt_markdown = "  \n".join(system_prompt.split("\n"))
-        f.write(f"## System Prompt\n{prompt_markdown}\n")
-        prompt_markdown = "  \n".join(user_prompt.split("\n"))
-        f.write(f"## User Prompt\n{prompt_markdown}\n")
-        f.write(f"## Reply\n{formatted_reply}\n")
+    if log:
+        with open("app/log.md", "a") as f:
+            f.write(f"# {datetime.datetime.now()}\n")
+            prompt_markdown = "  \n".join(system_prompt.split("\n"))
+            f.write(f"## System Prompt\n{prompt_markdown}\n")
+            prompt_markdown = "  \n".join(user_prompt.split("\n"))
+            f.write(f"## User Prompt\n{prompt_markdown}\n")
+            f.write(f"## Reply\n{formatted_reply}\n")
 
     return formatted_reply
 

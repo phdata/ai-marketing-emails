@@ -56,10 +56,36 @@ def main(drop_tables):
         replace=True,
         stage_location="@udf_stage",
     )
+    session.file.put(
+        "aimarketing/utils.py",
+        "@udf_stage/submit_gpt_prompt",
+        overwrite=True,
+    )
+    session.sql(
+        """
+CREATE OR REPLACE
+FUNCTION  submit_gpt_prompt(systemprompt STRING, userprompt STRING)
+RETURNS STRING
+LANGUAGE PYTHON
+RUNTIME_VERSION=3.8
+HANDLER='utils.submit_prompt_udf'
+EXTERNAL_ACCESS_INTEGRATIONS = (openai_api_access_integration)
+PACKAGES=('requests','cloudpickle==2.0.0')
+IMPORTS=('@udf_stage/submit_gpt_prompt/utils.py')
+SECRETS = ('OPENAI_API_KEY' = openai_token)
+    """
+    ).collect()
 
     print(
         session.sql(
             "select humanize_date(date_from_parts(2022,12,1), date_from_parts(2023,5,22)) as event;"
+        ).collect()
+    )
+    system_prompt = 'You are a pirate. You only speak like a pirate'
+    user_prompt = 'Tell me a short story about a bagel'
+    print(
+        session.sql(
+            f"select submit_gpt_prompt('{system_prompt}', '{user_prompt}') as response;"
         ).collect()
     )
 

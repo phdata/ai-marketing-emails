@@ -12,14 +12,19 @@ from snowflake.snowpark.functions import (
     udf,
     call_udf,
 )
+from snowflake.snowpark.exceptions import SnowparkSessionException
 from snowflake.snowpark.types import StringType
 
 from aimarketing.snowflake_utils import get_snowpark_session
+from snowflake.snowpark.context import get_active_session
 
 
 @st.cache_resource
 def get_session():
-    return get_snowpark_session()
+    try:
+        return get_active_session()
+    except SnowparkSessionException:
+        return get_snowpark_session()
 
 
 def format_user_prompt(
