@@ -124,20 +124,21 @@ def embed_imports_for_streamlit(
     output_source = "\n".join(lines)
 
     # find modules imported by source
-    imported_module_paths = [
-        path
-        for path in get_imported_module_paths(source, embed_packages)
+    modules_to_embed = [
+        (module, path)
+        for module, path in get_imported_module_paths(source, embed_packages)
         if path not in already_imported_packages
     ]
 
     # add source of imported files
-    if imported_module_paths:
+    if modules_to_embed:
         # prevent running __name__ == '__main__'
-        import_source = "__name__ = 'imported'\n"
-        for module_path in imported_module_paths:
-            already_imported_packages += [module_path]
+        import_source = ""
+        for module, path in modules_to_embed:
+            already_imported_packages += [path]
+            import_source += f"__name__ = '{module}'\n"
 
-            import_source += open(module_path).read()
+            import_source += open(path).read()
             import_source += "\n"
         import_source = embed_imports_for_streamlit(
             import_source, already_imported_packages, embed_packages
@@ -148,7 +149,7 @@ def embed_imports_for_streamlit(
 
 
 def get_imported_module_paths(code, embed_packages=["aimarketing"]):
-    module_paths = []
+    modules = []
     parsed_ast = ast.parse(code)
 
     module_names = []
@@ -168,12 +169,12 @@ def get_imported_module_paths(code, embed_packages=["aimarketing"]):
             print(module_name)
             module = __import__(module_name, fromlist=[""])
             module_path = getattr(module, "__file__", None)
-            module_paths.append(module_path)
+            modules.append((module_name, module_path))
         except ImportError as e:
             print(f"Could not import {module_name} due to {e}")
 
-    module_paths = list(set(module_paths))
-    return module_paths
+    modules = list(set(modules))
+    return modules
 
 
 if __name__ == "__main__":
@@ -181,8 +182,8 @@ if __name__ == "__main__":
 import numpy as np
 import streamlit as st
 import aimarketing.date_utils
-from aimarketing.utils import get_session
-session = get_session()
+from aimarketing.snowflake_utils import get_snowpark_session
+session = get_snowpark_session()
 print("Test")
         """
 

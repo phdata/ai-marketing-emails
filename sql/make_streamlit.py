@@ -1,6 +1,5 @@
 import click
-from aimarketing.utils import get_session
-from aimarketing.snowflake_utils import embed_imports_for_streamlit
+from aimarketing.snowflake_utils import embed_imports_for_streamlit, get_snowpark_session
 from tempfile import TemporaryDirectory
 
 
@@ -13,7 +12,7 @@ def main(update):
     """
     Create streamlit app in snowflake environment and upload files to it.
     """
-    session = get_session()
+    session = get_snowpark_session()
 
     session.sql("CREATE OR REPLACE STAGE generate_email_stage").collect()
 

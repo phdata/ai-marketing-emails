@@ -1,5 +1,5 @@
 import click
-from aimarketing.utils import get_session
+from aimarketing.snowflake_utils import get_snowpark_session
 
 from snowflake.snowpark.types import (
     StructType,
@@ -15,7 +15,7 @@ from pathlib import Path
 @click.command()
 @click.option("--drop-tables", is_flag=True, help="Drop all tables")
 def main(drop_tables):
-    session = get_session()
+    session = get_snowpark_session()
 
     session.sql("drop table if exists SANDBOX.AI_MARKETING.SALES_CONTACTS").collect()
     session.sql("create or replace temporary stage temp_stage").collect()
