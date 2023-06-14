@@ -1,25 +1,9 @@
 import streamlit as st
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 import os
 import datetime
 import json
 import requests
 import re
-
-from aimarketing.snowflake_utils import get_snowpark_session
-
-
-def get_session():
-    using_streamlit = get_script_run_ctx() is not None
-    if using_streamlit and "snowflake_session" in st.session_state:
-        return st.session_state.snowflake_session
-
-    session = get_snowpark_session()
-
-    if using_streamlit:
-        st.session_state.snowflake_session = session
-
-    return session
 
 
 def submit_prompt(system_prompt, user_prompt, log=True, openai=False):

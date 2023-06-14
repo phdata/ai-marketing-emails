@@ -1,10 +1,11 @@
 name: sf_env
 channels:
-- https://repo.anaconda.com/pkgs/snowflake
+#- https://repo.anaconda.com/pkgs/snowflake
+- conda-forge
 - nodefaults
 dependencies:
 - python>=3.8,<3.9
-- streamlit
+- streamlit==1.22.0
 - snowflake-snowpark-python
 - plotly
 - black

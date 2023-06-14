@@ -1,11 +1,10 @@
 import streamlit as st
 import json
-from datetime import date, timedelta, datetime
+import datetime
 import pandas as pd
 import re
-import logging
 
-from aimarketing.utils import submit_prompt, get_session
+from aimarketing.utils import submit_prompt
 from snowflake.snowpark.functions import (
     col,
     lit,
@@ -14,6 +13,13 @@ from snowflake.snowpark.functions import (
     call_udf,
 )
 from snowflake.snowpark.types import StringType
+
+from aimarketing.snowflake_utils import get_snowpark_session
+
+
+@st.cache_resource
+def get_session():
+    return get_snowpark_session()
 
 
 def format_user_prompt(
@@ -39,88 +45,77 @@ def print_prompt(user_prompt):
     st.markdown("  \n".join(f"**{line}**" for line in user_prompt.split("\n")))
 
 
-class Campaign:
-    """
-    A class that represents a campaign.
-    """
-
-    names = ["Returning Customer", "New Customer"]
-    TABLE_NAME = "SALES_CONTACTS"
-
-    def __init__(self, campaign_name):
-        self.campaign_name = campaign_name
-        self.system_prompt = json.load(open("app/extraordinary_events.json"))[
-            "system_prompt"
-        ][campaign_name]
-
-        if campaign_name == "Returning Customer":
-            self.select_expr = [
-                "UID",
-                "COMPANY_NAME",
-                "INDUSTRY",
-                "PREVIOUS_EVENT",
-                call_udf(
-                    "humanize_date", col("PREVIOUS_EVENT_DATE"), date.today()
-                ).alias("PREVIOUS_EVENT_DATE"),
-                "NOTES",
-                "CONTACT_NAME",
-                "CONTACT_EMAIL",
-            ]
-
-            self.filter_expr = col("PREVIOUS_EVENT").isNotNull()
-        elif campaign_name == "New Customer":
-            self.select_expr = [
-                "UID",
-                "COMPANY_NAME",
-                "INDUSTRY",
-                "NOTES",
-                "CONTACT_NAME",
-                "CONTACT_EMAIL",
-            ]
-            self.filter_expr = col("PREVIOUS_EVENT").isNull()
-
-    def get_table(self):
-        session = get_session()
-        contacts_table = session.table(self.TABLE_NAME)
-        contacts_table = contacts_table.filter(self.filter_expr)
-        return contacts_table
-
-    def get_system_prompt(self, with_date=False):
-        if with_date:
-            prompt = self.system_prompt_with_date()
-        else:
-            prompt = self.system_prompt
-        return re.sub("^[ \t]+|[ \t]+$", "", prompt, flags=re.MULTILINE)
-
-    def system_prompt_with_date(self, current_date=date.today()):
-        today = current_date.strftime("%B %d, %Y")
-        couple_years_ago = current_date - timedelta(days=365 * 2 + 50)
-        last_month = current_date - timedelta(days=30)
-        date_prompt = f"""The current date is {today}.
-        Only use relative language when talking about dates,
-        for example {couple_years_ago} would be "a couple years ago" and {last_month} would be "last month."
-        """
-        return date_prompt + self.system_prompt
-
-    def __hash__(self) -> int:
-        hash = self.campaign_name.__hash__() + self.system_prompt.__hash__()
-        logging.info(hash)
-        return hash
+campaign_names = ["Returning Customer", "New Customer"]
+TABLE_NAME = "SALES_CONTACTS"
 
 
-@st.cache
-def get_contacts(campaign):
+def get_system_prompt(campaign_name):
+    prompt = json.load(open("extraordinary_events.json"))["system_prompt"][
+        campaign_name
+    ]
+    return re.sub("^[ \t]+|[ \t]+$", "", prompt, flags=re.MULTILINE)
+
+
+def get_campaign_select(campaign_name):
+    if campaign_name == "Returning Customer":
+        return [
+            "UID",
+            "COMPANY_NAME",
+            "INDUSTRY",
+            "PREVIOUS_EVENT",
+            call_udf(
+                "humanize_date", col("PREVIOUS_EVENT_DATE"), datetime.date.today()
+            ).alias("PREVIOUS_EVENT_DATE"),
+            "NOTES",
+            "CONTACT_NAME",
+            "CONTACT_EMAIL",
+        ]
+
+    elif campaign_name == "New Customer":
+        return [
+            "UID",
+            "COMPANY_NAME",
+            "INDUSTRY",
+            "NOTES",
+            "CONTACT_NAME",
+            "CONTACT_EMAIL",
+        ]
+
+
+def get_campaign_filter(campaign_name):
+    if campaign_name == "Returning Customer":
+        return col("PREVIOUS_EVENT").isNotNull()
+    elif campaign_name == "New Customer":
+        return col("PREVIOUS_EVENT").isNull()
+
+
+def get_table(campaign_name):
+    session = get_session()
+    contacts_table = session.table(TABLE_NAME)
+    contacts_table = contacts_table.filter(get_campaign_filter(campaign_name))
+    return contacts_table
+
+
+@st.cache_data
+def get_contacts(campaign_name):
     return (
-        campaign.get_table().select(campaign.select_expr).to_pandas().set_index("UID")
+        get_table(campaign_name)
+        .select(get_campaign_select(campaign_name))
+        .to_pandas()
+        .set_index("UID")
     )
 
 
-@st.cache()
-def eval_gpt_prompts(campaign, current_date=date.today(), uid=None):
-    return make_gpt_prompts(campaign, current_date, uid).to_pandas()
+@st.cache_data
+def eval_gpt_prompts(
+    campaign_name, system_prompt, current_date=datetime.date.today(), uid=None
+):
+    return make_gpt_prompts(campaign_name, system_prompt, current_date, uid).to_pandas()
 
 
-def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
+def make_gpt_prompts(
+    campaign_name, system_prompt, current_date=datetime.date.today(), uid=None
+):
     # Make UDF for user prompt
     user_prompt_udf = udf(
         format_user_prompt,
@@ -136,16 +131,15 @@ def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
         session=get_session(),
     )
 
-    table = campaign.get_table()
+    table = get_table(campaign_name)
     if uid:
         table = table.filter(col("UID") == uid)
 
-    system_prompt = campaign.get_system_prompt()
     return table.select(
         current_session(),
         col("UID"),
         col("CONTACT_EMAIL"),
-        lit(campaign.campaign_name).alias("CAMPAIGN_NAME"),
+        lit(campaign_name).alias("CAMPAIGN_NAME"),
         lit(system_prompt).alias("SYSTEM_PROMPT"),
         user_prompt_udf(
             col("COMPANY_NAME"),
@@ -153,7 +147,9 @@ def make_gpt_prompts(campaign, current_date=date.today(), uid=None):
             col("NOTES"),
             col("CONTACT_NAME"),
             col("PREVIOUS_EVENT"),
-            call_udf("humanize_date", col("PREVIOUS_EVENT_DATE"), date.today()),
+            call_udf(
+                "humanize_date", col("PREVIOUS_EVENT_DATE"), datetime.date.today()
+            ),
         ).alias("USER_PROMPT"),
     )
 
@@ -164,27 +160,28 @@ st.markdown(
 First, you can select from a list of email campaigns. Depending on the campaign, a prewritten prompt is shown."""
 )
 
-campaign = Campaign(st.selectbox("Email Campaign", Campaign.names))
+campaign_name = st.selectbox("Email Campaign", campaign_names)
 
-campaign.system_prompt = st.text_area(
+system_prompt = st.text_area(
     "System Prompt",
-    campaign.system_prompt,
+    get_system_prompt(campaign_name),
     height=300,
 )
-contacts = get_contacts(campaign)
+contacts = get_contacts(campaign_name)
+
 st.subheader("Select contact data")
 st.markdown(
     "In addition, the email campaign specifies which set of contacts to retrieve from the Snowflake table."
 )
-st.info(f"Found {len(contacts)} contacts in the {campaign.TABLE_NAME} table")
+st.info(f"Found {len(contacts)} contacts in the {TABLE_NAME} table")
 all_data = st.checkbox("Generate Emails for All Contacts")
 if all_data:
-    prompts_df = eval_gpt_prompts(campaign)
+    prompts_df = eval_gpt_prompts(campaign_name, system_prompt)
 else:
     contact_id = st.selectbox(
         "Contact", contacts.index, format_func=contacts.COMPANY_NAME.to_dict().get
     )
-    prompts_df = eval_gpt_prompts(campaign, uid=contact_id)
+    prompts_df = eval_gpt_prompts(campaign_name, system_prompt, uid=contact_id)
 
 if st.button("Generate"):
     if len(prompts_df) > 1:
@@ -206,7 +203,7 @@ if st.button("Generate"):
                 [prompts_df.loc[[contact_id]], emails.loc[[contact_id]]], axis=1
             )
 
-            prompts_response["TIMESTAMP"] = datetime.now()
+            prompts_response["TIMESTAMP"] = datetime.datetime.now()
             prompts_response["TIMESTAMP"] = (
                 prompts_response["TIMESTAMP"]
                 .astype("datetime64[ns]")

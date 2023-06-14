@@ -3,6 +3,8 @@ import os
 from typing import Optional
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+import ast
+import re
 
 
 # Class to store a singleton connection option
@@ -101,3 +103,90 @@ def get_private_key(path):
     )
 
     return pkb
+
+
+def embed_imports_for_streamlit(
+    source,
+    already_imported_packages=None,
+    embed_packages=["aimarketing"],
+):
+    if already_imported_packages is None:
+        already_imported_packages = []
+
+    # Remove imports for specific packages
+    lines = source.split("\n")
+    for package in embed_packages:
+        lines = [
+            line
+            for line in lines
+            if not re.match(rf"^\s*(from|import)\s+{package}\b", line)
+        ]
+    output_source = "\n".join(lines)
+
+    # find modules imported by source
+    imported_module_paths = [
+        path
+        for path in get_imported_module_paths(source, embed_packages)
+        if path not in already_imported_packages
+    ]
+
+    # add source of imported files
+    if imported_module_paths:
+        # prevent running __name__ == '__main__'
+        import_source = "__name__ = 'imported'\n"
+        for module_path in imported_module_paths:
+            already_imported_packages += [module_path]
+
+            import_source += open(module_path).read()
+            import_source += "\n"
+        import_source = embed_imports_for_streamlit(
+            import_source, already_imported_packages, embed_packages
+        )
+        output_source = import_source + "\n" + output_source
+
+    return output_source
+
+
+def get_imported_module_paths(code, embed_packages=["aimarketing"]):
+    module_paths = []
+    parsed_ast = ast.parse(code)
+
+    module_names = []
+    for node in ast.walk(parsed_ast):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                module_name = alias.name
+                module_names.append(module_name)
+        elif isinstance(node, ast.ImportFrom):
+            module_name = node.module
+            module_names.append(module_name)
+
+    for module_name in module_names:
+        if not any(module_name.startswith(p) for p in embed_packages):
+            continue
+        try:
+            print(module_name)
+            module = __import__(module_name, fromlist=[""])
+            module_path = getattr(module, "__file__", None)
+            module_paths.append(module_path)
+        except ImportError as e:
+            print(f"Could not import {module_name} due to {e}")
+
+    module_paths = list(set(module_paths))
+    return module_paths
+
+
+if __name__ == "__main__":
+    source = """
+import numpy as np
+import streamlit as st
+import aimarketing.date_utils
+from aimarketing.utils import get_session
+session = get_session()
+print("Test")
+        """
+
+    print("**** execute source ****")
+    exec(source)
+    print("**** execute source with embed ****")
+    exec(embed_imports_for_streamlit(source))
