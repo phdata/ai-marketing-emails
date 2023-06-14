@@ -15,6 +15,26 @@ from pathlib import Path
 @click.command()
 @click.option("--drop-tables", is_flag=True, help="Drop all tables")
 def main(drop_tables):
+    print("""
+    Run this one time to setup Network Rules
+```
+create or replace network rule openai_api_network_rule
+    mode = EGRESS
+    TYPE = HOST_PORT
+    VALUE_LIST = ('api.openai.com');
+
+create or replace secret openai_token
+    type = GENERIC_STRING
+    SECRET_STRING = 'sk-*****';
+
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION openai_api_access_integration
+  ALLOWED_NETWORK_RULES = (openai_api_network_rule)
+  ALLOWED_AUTHENTICATION_SECRETS = (openai_token)
+  ENABLED = true;
+```
+"""
+          )
     session = get_snowpark_session()
 
     session.sql("drop table if exists SANDBOX.AI_MARKETING.SALES_CONTACTS").collect()
@@ -81,8 +101,8 @@ SECRETS = ('OPENAI_API_KEY' = openai_token)
             "select humanize_date(date_from_parts(2022,12,1), date_from_parts(2023,5,22)) as event;"
         ).collect()
     )
-    system_prompt = 'You are a pirate. You only speak like a pirate'
-    user_prompt = 'Tell me a short story about a bagel'
+    system_prompt = 'You are a poet that specializes in limericks. The standard form of a limerick is a stanza of five lines, with the first, second and fifth rhyming with one another and having three feet of three syllables each; and the shorter third and fourth lines also rhyming with each other, but having only two feet of three syllables. Start the limerick with \'there was once\''
+    user_prompt = 'Write a limerick about data and Snowflake'
     print(
         session.sql(
             f"select submit_gpt_prompt('{system_prompt}', '{user_prompt}') as response;"
