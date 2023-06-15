@@ -15,7 +15,8 @@ from pathlib import Path
 @click.command()
 @click.option("--drop-tables", is_flag=True, help="Drop all tables")
 def main(drop_tables):
-    print("""
+    print(
+        """
     Run this one time to setup Network Rules
 ```
 create or replace network rule openai_api_network_rule
@@ -34,7 +35,7 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION openai_api_access_integration
   ENABLED = true;
 ```
 """
-          )
+    )
     session = get_snowpark_session()
 
     session.sql("drop table if exists SANDBOX.AI_MARKETING.SALES_CONTACTS").collect()
@@ -101,30 +102,43 @@ SECRETS = ('OPENAI_API_KEY' = openai_token)
             "select humanize_date(date_from_parts(2022,12,1), date_from_parts(2023,5,22)) as event;"
         ).collect()
     )
-    system_prompt = 'You are a poet that specializes in limericks. The standard form of a limerick is a stanza of five lines, with the first, second and fifth rhyming with one another and having three feet of three syllables each; and the shorter third and fourth lines also rhyming with each other, but having only two feet of three syllables. Start the limerick with \'there was once\''
-    user_prompt = 'Write a limerick about data and Snowflake'
+    system_prompt = r"You are a poet that specializes in limericks. The standard form of a limerick is a stanza of five lines, with the first, second and fifth rhyming with one another and having three feet of three syllables each; and the shorter third and fourth lines also rhyming with each other, but having only two feet of three syllables. Start the limerick with \'there was once\'"
+    user_prompt = "Write a limerick about data and Snowflake"
     print(
         session.sql(
             f"select submit_gpt_prompt('{system_prompt}', '{user_prompt}') as response;"
         ).collect()
     )
 
-    session.sql(
-        """create or replace view SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS_LATEST(
-            UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL
-        ) as
-        SELECT UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL
-        FROM (
-            SELECT UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL,
-                ROW_NUMBER() OVER (PARTITION BY UID ORDER BY TIMESTAMP DESC) AS rn
-            FROM GPT_EMAIL_PROMPTS
-        ) t
-        WHERE rn = 1;"""
-    )
     if drop_tables:
         session.sql(
             "drop table if exists SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS"
         ).collect()
+
+    session.sql("""
+    create TABLE if not exists SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS (
+        SESSION_ID string,
+        UID NUMBER(38,0),
+        CONTACT_EMAIL string,
+        CAMPAIGN_NAME string,
+        SYSTEM_PROMPT string,
+        USER_PROMPT string,
+        EMAIL string,
+        TIMESTAMP TIMESTAMP_NTZ(9)
+    );""").collect()
+
+    session.sql(
+        """create or replace view SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS_LATEST(
+            SESSION_ID, UID, CONTACT_EMAIL, CAMPAIGN_NAME, SYSTEM_PROMPT, USER_PROMPT, EMAIL, TIMESTAMP
+        ) as
+        SELECT SESSION_ID, UID, CONTACT_EMAIL, CAMPAIGN_NAME, SYSTEM_PROMPT, USER_PROMPT, EMAIL, TIMESTAMP
+        FROM (
+            SELECT *,
+                ROW_NUMBER() OVER (PARTITION BY UID ORDER BY TIMESTAMP DESC) AS rn
+            FROM GPT_EMAIL_PROMPTS
+        ) t
+        WHERE rn = 1;"""
+    ).collect()
 
 
 if __name__ == "__main__":
