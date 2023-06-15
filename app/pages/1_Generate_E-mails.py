@@ -272,7 +272,11 @@ if st.button("Generate"):
             emails = pd.Series(index=prompts_df.index, name="EMAIL", dtype=str)
             for i, (contact_id, row) in enumerate(prompts_df.iterrows()):
                 print_prompt(row.USER_PROMPT)
-                response = submit_prompt(row.SYSTEM_PROMPT, row.USER_PROMPT)
+                try:
+                    response = submit_prompt(row.SYSTEM_PROMPT, row.USER_PROMPT)
+                except RuntimeError:
+                    st.write("OpenAI API not configured. Try 'Run ChatGPT in Snowflake.'")
+                    st.stop()
 
                 emails.loc[contact_id] = response
 

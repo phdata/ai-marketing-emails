@@ -28,9 +28,12 @@ def submit_prompt(
         "stream": use_streamlit,
     }
 
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY not set")
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + os.environ.get("OPENAI_API_KEY"),
+        "Authorization": "Bearer " + OPENAI_API_KEY,
     }
 
     # retry until response is valid
