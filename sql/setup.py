@@ -38,6 +38,10 @@ CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION openai_api_access_integration
     )
     session = get_snowpark_session()
 
+    session.sql("create schema if not exists SANDBOX.AI_MARKETING;").collect()
+    session.sql("GRANT ALL PRIVILEGES ON SCHEMA AI_MARKETING to role DE_ARCHITECTS;")
+    session.sql("GRANT ALL PRIVILEGES ON SCHEMA AI_MARKETING to role MLE_ARCHITECTS;")
+
     session.sql("drop table if exists SANDBOX.AI_MARKETING.SALES_CONTACTS").collect()
     session.sql("create or replace temporary stage temp_stage").collect()
     session.file.put(
@@ -102,7 +106,13 @@ SECRETS = ('OPENAI_API_KEY' = openai_token)
             "select humanize_date(date_from_parts(2022,12,1), date_from_parts(2023,5,22)) as event;"
         ).collect()
     )
-    system_prompt = r"You are a poet that specializes in limericks. The standard form of a limerick is a stanza of five lines, with the first, second and fifth rhyming with one another and having three feet of three syllables each; and the shorter third and fourth lines also rhyming with each other, but having only two feet of three syllables. Start the limerick with \'there was once\'"
+    system_prompt = r"""
+    You are a poet that specializes in limericks. The standard form of a
+    limerick is a stanza of five lines, with the first, second and fifth rhyming
+    with one another and having three feet of three syllables each; and the
+    shorter third and fourth lines also rhyming with each other, but having only
+    two feet of three syllables. Start the limerick with \'there was once\'
+    """
     user_prompt = "Write a limerick about data and Snowflake"
     print(
         session.sql(
@@ -115,7 +125,8 @@ SECRETS = ('OPENAI_API_KEY' = openai_token)
             "drop table if exists SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS"
         ).collect()
 
-    session.sql("""
+    session.sql(
+        """
     create TABLE if not exists SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS (
         SESSION_ID string,
         UID NUMBER(38,0),
@@ -125,7 +136,8 @@ SECRETS = ('OPENAI_API_KEY' = openai_token)
         USER_PROMPT string,
         EMAIL string,
         TIMESTAMP TIMESTAMP_NTZ(9)
-    );""").collect()
+    );"""
+    ).collect()
 
     session.sql(
         """create or replace view SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS_LATEST(

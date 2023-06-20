@@ -222,13 +222,13 @@ st.markdown(
 )
 st.info(f"Found {len(contacts)} contacts in the {TABLE_NAME} table")
 use_udf_for_gpt = st.checkbox("Run ChatGPT in Snowflake")
-all_data = st.checkbox("Generate Emails for All Contacts")
-
-contact_id = None
-if not all_data:
-    contact_id = st.selectbox(
-        "Contact", contacts.index, format_func=contacts.COMPANY_NAME.to_dict().get
-    )
+generate_all = st.checkbox("Generate Emails for All Contacts")
+contact_id = st.selectbox(
+    "Contact", contacts.index, format_func=contacts.COMPANY_NAME.to_dict().get,
+    disabled=generate_all,
+)
+if generate_all:
+    contact_id = None
 
 if use_udf_for_gpt:
     prompts_df = make_gpt_prompts(campaign_name, system_prompt, uid=contact_id)

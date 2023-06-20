@@ -8,10 +8,46 @@ import re
 def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
     import _snowflake
 
-    os.environ["OPENAI_API_KEY"] = _snowflake.get_generic_secret_string(
+    OPENAI_API_KEY = _snowflake.get_generic_secret_string(
         "OPENAI_API_KEY"
     )
-    return submit_prompt(system_prompt, user_prompt, False, False)
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY not set")
+
+    url = "https://api.openai.com/v1/chat/completions"
+
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "stream": False,
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + OPENAI_API_KEY,
+    }
+
+    # retry until response is valid
+    retry = 0
+    while retry < 5:
+        response = requests.post(
+            url, headers=headers, data=json.dumps(payload)
+        )
+        if response.status_code == 200:
+            break
+        else:
+            print(f"Error: {response.status_code}")
+            print(response.text)
+            retry += 1
+            if retry == 5:
+                raise Exception("Failed to get response from OpenAI")
+
+    full_reply_content = response.json()["choices"][0]["message"]["content"]
+    formatted_reply = re.sub(r"\n+", "\n\n", full_reply_content, flags=re.MULTILINE)
+    return formatted_reply
 
 
 def submit_prompt(

@@ -44,9 +44,11 @@ def main(update):
     ROOT_LOCATION = '@{session.get_current_database()}.{session.get_current_schema()}.generate_email_stage'
     MAIN_FILE = '/streamlit_app.py'
     QUERY_WAREHOUSE = {session.get_current_warehouse()}
-    TITLE = 'Generate E-mails with GPT'
-    """
-    ).collect()
+    TITLE = 'Generate E-mails with GPT';
+    """).collect()
+
+    session.sql("grant usage on streamlit generate_email to ROLE DE_ARCHITECTS;").collect()
+    session.sql("grant usage on streamlit generate_email to ROLE MLE_ARCHITECTS;").collect()
 
 
 if __name__ == "__main__":
