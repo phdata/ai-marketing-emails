@@ -6,11 +6,9 @@ import re
 
 
 def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
-    import _snowflake
+    import _snowflake  # type: ignore
 
-    OPENAI_API_KEY = _snowflake.get_generic_secret_string(
-        "OPENAI_API_KEY"
-    )
+    OPENAI_API_KEY = _snowflake.get_generic_secret_string("OPENAI_API_KEY")
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY not set")
 
@@ -33,9 +31,7 @@ def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
     # retry until response is valid
     retry = 0
     while retry < 5:
-        response = requests.post(
-            url, headers=headers, data=json.dumps(payload)
-        )
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
         if response.status_code == 200:
             break
         else:
@@ -89,6 +85,7 @@ def submit_prompt(
 
     if use_streamlit:
         import streamlit as st
+
         response_container = st.empty()
         collected_messages = []
         for chunk in parse_stream(response.iter_lines()):

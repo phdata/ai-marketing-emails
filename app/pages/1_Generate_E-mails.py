@@ -28,6 +28,13 @@ def get_session():
         return get_snowpark_session()
 
 
+try:
+    import _snowflake  # type: ignore # noqa
+
+    on_snowflake = True
+except ImportError:
+    on_snowflake = False
+
 OUTPUT_TABLE_NAME = "GPT_EMAIL_PROMPTS"
 LATEST_VIEW_NAME = "GPT_EMAIL_PROMPTS_LATEST"
 FULL_OUTPUT_TABLE_NAME = (
@@ -221,10 +228,12 @@ st.markdown(
     "In addition, the email campaign specifies which set of contacts to retrieve from the Snowflake table."
 )
 st.info(f"Found {len(contacts)} contacts in the {TABLE_NAME} table")
-use_udf_for_gpt = st.checkbox("Run ChatGPT in Snowflake")
+use_udf_for_gpt = on_snowflake or st.checkbox("Run ChatGPT in Snowflake")
 generate_all = st.checkbox("Generate Emails for All Contacts")
 contact_id = st.selectbox(
-    "Contact", contacts.index, format_func=contacts.COMPANY_NAME.to_dict().get,
+    "Contact",
+    contacts.index,
+    format_func=contacts.COMPANY_NAME.to_dict().get,
     disabled=generate_all,
 )
 if generate_all:
@@ -275,7 +284,9 @@ if st.button("Generate"):
                 try:
                     response = submit_prompt(row.SYSTEM_PROMPT, row.USER_PROMPT)
                 except RuntimeError:
-                    st.write("OpenAI API not configured. Try 'Run ChatGPT in Snowflake.'")
+                    st.write(
+                        "OpenAI API not configured. Try 'Run ChatGPT in Snowflake.'"
+                    )
                     st.stop()
 
                 emails.loc[contact_id] = response
