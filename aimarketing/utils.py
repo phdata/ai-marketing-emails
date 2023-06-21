@@ -4,14 +4,50 @@ import json
 import requests
 import re
 
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)  # for exponential backoff
+
+
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
+def request_post_retry(url, headers, payload):
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    return response
+
+
+MAX_TOKENS = 300
+
 
 def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
-    import _snowflake
+    import _snowflake  # type: ignore
 
-    os.environ["OPENAI_API_KEY"] = _snowflake.get_generic_secret_string(
-        "OPENAI_API_KEY"
-    )
-    return submit_prompt(system_prompt, user_prompt, False, False)
+    OPENAI_API_KEY = _snowflake.get_generic_secret_string("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY not set")
+
+    url = "https://api.openai.com/v1/chat/completions"
+
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "stream": False,
+        "max_tokens": MAX_TOKENS,
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + OPENAI_API_KEY,
+    }
+
+    response = request_post_retry(url, headers, payload)
+    full_reply_content = response.json()["choices"][0]["message"]["content"]
+    formatted_reply = re.sub(r"\n+", "\n\n", full_reply_content, flags=re.MULTILINE)
+    return formatted_reply
 
 
 def submit_prompt(
@@ -25,31 +61,23 @@ def submit_prompt(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
+        "max_tokens": MAX_TOKENS,
         "stream": use_streamlit,
     }
 
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY not set")
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + os.environ.get("OPENAI_API_KEY"),
+        "Authorization": "Bearer " + OPENAI_API_KEY,
     }
 
-    # retry until response is valid
-    retry = 0
-    while retry < 5:
-        response = requests.post(
-            url, headers=headers, data=json.dumps(payload), stream=use_streamlit
-        )
-        if response.status_code == 200:
-            break
-        else:
-            print(f"Error: {response.status_code}")
-            print(response.text)
-            retry += 1
-            if retry == 5:
-                raise Exception("Failed to get response from OpenAI")
+    response = request_post_retry(url, headers, payload)
 
     if use_streamlit:
         import streamlit as st
+
         response_container = st.empty()
         collected_messages = []
         for chunk in parse_stream(response.iter_lines()):

@@ -119,7 +119,7 @@ def embed_imports_for_streamlit(
         lines = [
             line
             for line in lines
-            if not re.match(rf"^\s*(from|import)\s+{package}\b", line)
+            if not re.match(rf"^\s*from\s+{package}\b", line)
         ]
     output_source = "\n".join(lines)
 
@@ -152,26 +152,19 @@ def get_imported_module_paths(code, embed_packages=["aimarketing"]):
     modules = []
     parsed_ast = ast.parse(code)
 
-    module_names = []
     for node in ast.walk(parsed_ast):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                module_name = alias.name
-                module_names.append(module_name)
-        elif isinstance(node, ast.ImportFrom):
+        if isinstance(node, ast.ImportFrom):
             module_name = node.module
-            module_names.append(module_name)
 
-    for module_name in module_names:
-        if not any(module_name.startswith(p) for p in embed_packages):
-            continue
-        try:
-            print(module_name)
-            module = __import__(module_name, fromlist=[""])
-            module_path = getattr(module, "__file__", None)
-            modules.append((module_name, module_path))
-        except ImportError as e:
-            print(f"Could not import {module_name} due to {e}")
+            if not any(module_name.startswith(p) for p in embed_packages):
+                continue
+            try:
+                print(module_name)
+                module = __import__(module_name, fromlist=[""])
+                module_path = getattr(module, "__file__", None)
+                modules.append((module_name, module_path))
+            except ImportError as e:
+                print(f"Could not import {module_name} due to {e}")
 
     modules = list(set(modules))
     return modules

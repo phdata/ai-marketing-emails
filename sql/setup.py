@@ -15,7 +15,32 @@ from pathlib import Path
 @click.command()
 @click.option("--drop-tables", is_flag=True, help="Drop all tables")
 def main(drop_tables):
+    print(
+        """
+    Run this one time to setup Network Rules
+```
+create or replace network rule openai_api_network_rule
+    mode = EGRESS
+    TYPE = HOST_PORT
+    VALUE_LIST = ('api.openai.com');
+
+create or replace secret openai_token
+    type = GENERIC_STRING
+    SECRET_STRING = 'sk-*****';
+
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION openai_api_access_integration
+  ALLOWED_NETWORK_RULES = (openai_api_network_rule)
+  ALLOWED_AUTHENTICATION_SECRETS = (openai_token)
+  ENABLED = true;
+```
+"""
+    )
     session = get_snowpark_session()
+
+    session.sql("create schema if not exists SANDBOX.AI_MARKETING;").collect()
+    session.sql("GRANT ALL PRIVILEGES ON SCHEMA AI_MARKETING to role DE_ARCHITECTS;")
+    session.sql("GRANT ALL PRIVILEGES ON SCHEMA AI_MARKETING to role MLE_ARCHITECTS;")
 
     session.sql("drop table if exists SANDBOX.AI_MARKETING.SALES_CONTACTS").collect()
     session.sql("create or replace temporary stage temp_stage").collect()
@@ -47,64 +72,37 @@ def main(drop_tables):
     )
     df.copy_into_table("SALES_CONTACTS", force=True)
 
-    session.sql("create or replace stage udf_stage").collect()
-    session.udf.register_from_file(
-        file_path="aimarketing/date_utils.py",
-        func_name="humanize_date",
-        name="humanize_date",
-        is_permanent=True,
-        replace=True,
-        stage_location="@udf_stage",
-    )
-    session.file.put(
-        "aimarketing/utils.py",
-        "@udf_stage/submit_gpt_prompt",
-        overwrite=True,
-    )
-    session.sql(
-        """
-CREATE OR REPLACE
-FUNCTION  submit_gpt_prompt(systemprompt STRING, userprompt STRING)
-RETURNS STRING
-LANGUAGE PYTHON
-RUNTIME_VERSION=3.8
-HANDLER='utils.submit_prompt_udf'
-EXTERNAL_ACCESS_INTEGRATIONS = (openai_api_access_integration)
-PACKAGES=('requests','cloudpickle==2.0.0')
-IMPORTS=('@udf_stage/submit_gpt_prompt/utils.py')
-SECRETS = ('OPENAI_API_KEY' = openai_token)
-    """
-    ).collect()
-
-    print(
-        session.sql(
-            "select humanize_date(date_from_parts(2022,12,1), date_from_parts(2023,5,22)) as event;"
-        ).collect()
-    )
-    system_prompt = 'You are a pirate. You only speak like a pirate'
-    user_prompt = 'Tell me a short story about a bagel'
-    print(
-        session.sql(
-            f"select submit_gpt_prompt('{system_prompt}', '{user_prompt}') as response;"
-        ).collect()
-    )
-
-    session.sql(
-        """create or replace view SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS_LATEST(
-            UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL
-        ) as
-        SELECT UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL
-        FROM (
-            SELECT UID, CONTACT_EMAIL, CAMPAIGN_NAME, EMAIL,
-                ROW_NUMBER() OVER (PARTITION BY UID ORDER BY TIMESTAMP DESC) AS rn
-            FROM GPT_EMAIL_PROMPTS
-        ) t
-        WHERE rn = 1;"""
-    )
     if drop_tables:
         session.sql(
             "drop table if exists SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS"
         ).collect()
+
+    session.sql(
+        """
+    create TABLE if not exists SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS (
+        SESSION_ID string,
+        UID NUMBER(38,0),
+        CONTACT_EMAIL string,
+        CAMPAIGN_NAME string,
+        SYSTEM_PROMPT string,
+        USER_PROMPT string,
+        EMAIL string,
+        TIMESTAMP TIMESTAMP_NTZ(9)
+    );"""
+    ).collect()
+
+    session.sql(
+        """create or replace view SANDBOX.AI_MARKETING.GPT_EMAIL_PROMPTS_LATEST(
+            SESSION_ID, UID, CONTACT_EMAIL, CAMPAIGN_NAME, SYSTEM_PROMPT, USER_PROMPT, EMAIL, TIMESTAMP
+        ) as
+        SELECT SESSION_ID, UID, CONTACT_EMAIL, CAMPAIGN_NAME, SYSTEM_PROMPT, USER_PROMPT, EMAIL, TIMESTAMP
+        FROM (
+            SELECT *,
+                ROW_NUMBER() OVER (PARTITION BY UID ORDER BY TIMESTAMP DESC) AS rn
+            FROM GPT_EMAIL_PROMPTS
+        ) t
+        WHERE rn = 1;"""
+    ).collect()
 
 
 if __name__ == "__main__":

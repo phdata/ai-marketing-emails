@@ -11,6 +11,7 @@ from snowflake.snowpark.functions import (
     current_session,
     udf,
     call_udf,
+    sysdate,
 )
 from snowflake.snowpark.exceptions import SnowparkSessionException
 from snowflake.snowpark.types import StringType
@@ -25,6 +26,24 @@ def get_session():
         return get_active_session()
     except SnowparkSessionException:
         return get_snowpark_session()
+
+
+try:
+    import _snowflake  # type: ignore # noqa
+
+    on_snowflake = True
+except ImportError:
+    on_snowflake = False
+
+OUTPUT_TABLE_NAME = "GPT_EMAIL_PROMPTS"
+LATEST_VIEW_NAME = "GPT_EMAIL_PROMPTS_LATEST"
+FULL_OUTPUT_TABLE_NAME = (
+    get_session().get_current_database()
+    + "."
+    + get_session().get_current_schema()
+    + "."
+    + OUTPUT_TABLE_NAME
+)
 
 
 def format_user_prompt(
@@ -111,15 +130,11 @@ def get_contacts(campaign_name):
     )
 
 
-@st.cache_data
-def eval_gpt_prompts(
-    campaign_name, system_prompt, current_date=datetime.date.today(), uid=None
-):
-    return make_gpt_prompts(campaign_name, system_prompt, current_date, uid).to_pandas()
-
-
 def make_gpt_prompts(
-    campaign_name, system_prompt, current_date=datetime.date.today(), uid=None
+    campaign_name,
+    system_prompt,
+    current_date=datetime.date.today(),
+    uid=None,
 ):
     # Make UDF for user prompt
     user_prompt_udf = udf(
@@ -140,8 +155,8 @@ def make_gpt_prompts(
     if uid:
         table = table.filter(col("UID") == uid)
 
-    return table.select(
-        current_session(),
+    prompts = table.select(
+        current_session().alias("SESSION_ID"),
         col("UID"),
         col("CONTACT_EMAIL"),
         lit(campaign_name).alias("CAMPAIGN_NAME"),
@@ -157,6 +172,24 @@ def make_gpt_prompts(
             ),
         ).alias("USER_PROMPT"),
     )
+    return prompts
+
+
+def add_gpt_to_select(df):
+    return df.select(
+        col("SESSION_ID"),
+        col("UID"),
+        col("CONTACT_EMAIL"),
+        col("CAMPAIGN_NAME"),
+        col("SYSTEM_PROMPT"),
+        col("USER_PROMPT"),
+        call_udf(
+            "submit_gpt_prompt",
+            col("SYSTEM_PROMPT"),
+            col("USER_PROMPT"),
+        ).alias("EMAIL"),
+        sysdate().alias("TIMESTAMP"),
+    )
 
 
 st.header(":snowflake: Generate Email using Snowflake Data")
@@ -164,6 +197,7 @@ st.markdown(
     """This application serves as an interface for using GPT-3 to generate emails for contacts in Snowflake Data.
 First, you can select from a list of email campaigns. Depending on the campaign, a prewritten prompt is shown."""
 )
+
 
 campaign_name = st.selectbox("Email Campaign", campaign_names)
 
@@ -179,57 +213,87 @@ st.markdown(
     "In addition, the email campaign specifies which set of contacts to retrieve from the Snowflake table."
 )
 st.info(f"Found {len(contacts)} contacts in the {TABLE_NAME} table")
-all_data = st.checkbox("Generate Emails for All Contacts")
-if all_data:
-    prompts_df = eval_gpt_prompts(campaign_name, system_prompt)
-else:
-    contact_id = st.selectbox(
-        "Contact", contacts.index, format_func=contacts.COMPANY_NAME.to_dict().get
-    )
-    prompts_df = eval_gpt_prompts(campaign_name, system_prompt, uid=contact_id)
+use_udf_for_gpt = on_snowflake or st.checkbox("Run ChatGPT in Snowflake")
+generate_all = st.checkbox("Generate Emails for All Contacts")
+contact_id = st.selectbox(
+    "Contact",
+    contacts.index,
+    format_func=contacts.COMPANY_NAME.to_dict().get,
+    disabled=generate_all,
+)
+if generate_all:
+    contact_id = None
 
 if st.button("Generate"):
-    if len(prompts_df) > 1:
-        bar = st.progress(0)
-    else:
-        bar = None
-    emails = pd.Series(index=prompts_df.index, name="EMAIL", dtype=str)
     with st.spinner("Generating..."):
-        for i, (contact_id, row) in enumerate(prompts_df.iterrows()):
-            print_prompt(row.USER_PROMPT)
-            response = submit_prompt(row.SYSTEM_PROMPT, row.USER_PROMPT)
-
-            emails.loc[contact_id] = response
-
-            if bar:
-                bar.progress((i + 1) / len(prompts_df))
-
-            prompts_response = pd.concat(
-                [prompts_df.loc[[contact_id]], emails.loc[[contact_id]]], axis=1
+        if use_udf_for_gpt:
+            prompts_df = make_gpt_prompts(campaign_name, system_prompt, uid=contact_id)
+            prompts_responses_df = add_gpt_to_select(prompts_df)
+            prompts_responses_df.write.save_as_table(
+                OUTPUT_TABLE_NAME, mode="append", column_order="name"
             )
-
-            prompts_response["TIMESTAMP"] = datetime.datetime.now()
-            prompts_response["TIMESTAMP"] = (
-                prompts_response["TIMESTAMP"]
-                .astype("datetime64[ns]")
-                .dt.tz_localize("UTC")
-            )
-
-            # Write to Snowflake
-
-            output_table_name = "GPT_EMAIL_PROMPTS"
-            write_result = get_session().write_pandas(
-                prompts_response,
-                output_table_name,
-                auto_create_table=True,
-            )
-            full_output_table_name = (
-                get_session().get_current_database()
-                + "."
-                + get_session().get_current_schema()
-                + "."
-                + output_table_name
+            latest_response_in_session = (
+                prompts_df.select(col("UID"), "SESSION_ID")
+                .join(
+                    get_session()
+                    .table(LATEST_VIEW_NAME)
+                    .select(
+                        col("UID"),
+                        "SESSION_ID",
+                        col("USER_PROMPT"),
+                        col("EMAIL"),
+                    ),
+                    on=["UID", "SESSION_ID"],
+                )
+                .to_pandas()
             )
             st.success(
-                f"Wrote {len(prompts_response)} rows to `{full_output_table_name}`"
+                f"Wrote {len(latest_response_in_session) } rows to `{FULL_OUTPUT_TABLE_NAME}`"
             )
+            for i, row in latest_response_in_session.iterrows():
+                print_prompt(row.USER_PROMPT)
+                st.markdown(row.EMAIL)
+
+        else:
+            prompts_df = make_gpt_prompts(campaign_name, system_prompt, uid=contact_id).to_pandas()
+            if len(prompts_df) > 1:
+                bar = st.progress(0)
+            else:
+                bar = None
+            emails = pd.Series(index=prompts_df.index, name="EMAIL", dtype=str)
+            for i, (contact_id, row) in enumerate(prompts_df.iterrows()):
+                print_prompt(row.USER_PROMPT)
+                try:
+                    response = submit_prompt(row.SYSTEM_PROMPT, row.USER_PROMPT)
+                except RuntimeError:
+                    st.write(
+                        "OpenAI API not configured. Try 'Run ChatGPT in Snowflake.'"
+                    )
+                    st.stop()
+
+                emails.loc[contact_id] = response
+
+                if bar:
+                    bar.progress((i + 1) / len(prompts_df))
+
+                prompts_response = pd.concat(
+                    [prompts_df.loc[[contact_id]], emails.loc[[contact_id]]], axis=1
+                )
+
+                prompts_response["TIMESTAMP"] = datetime.datetime.utcnow()
+                prompts_response["TIMESTAMP"] = (
+                    prompts_response["TIMESTAMP"]
+                    .astype("datetime64[ns]")
+                    .dt.tz_localize("UTC")
+                )
+
+                # Write to Snowflake
+
+                write_result = get_session().write_pandas(
+                    prompts_response,
+                    OUTPUT_TABLE_NAME,
+                    auto_create_table=True,
+                )
+                st.success(
+                    f"Wrote {len(prompts_response)} rows to `{FULL_OUTPUT_TABLE_NAME}`"
+                )
