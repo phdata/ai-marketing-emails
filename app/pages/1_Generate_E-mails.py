@@ -11,7 +11,7 @@ from snowflake.snowpark.functions import (
     current_session,
     udf,
     call_udf,
-    current_timestamp,
+    sysdate,
 )
 from snowflake.snowpark.exceptions import SnowparkSessionException
 from snowflake.snowpark.types import StringType
@@ -130,21 +130,6 @@ def get_contacts(campaign_name):
     )
 
 
-@st.cache_data
-def cache_gpt_prompts(
-    campaign_name,
-    system_prompt,
-    current_date=datetime.date.today(),
-    uid=None,
-):
-    return make_gpt_prompts(
-        campaign_name,
-        system_prompt,
-        current_date=current_date,
-        uid=uid,
-    ).to_pandas()
-
-
 def make_gpt_prompts(
     campaign_name,
     system_prompt,
@@ -203,7 +188,7 @@ def add_gpt_to_select(df):
             col("SYSTEM_PROMPT"),
             col("USER_PROMPT"),
         ).alias("EMAIL"),
-        current_timestamp().alias("TIMESTAMP"),
+        sysdate().alias("TIMESTAMP"),
     )
 
 
@@ -239,14 +224,10 @@ contact_id = st.selectbox(
 if generate_all:
     contact_id = None
 
-if use_udf_for_gpt:
-    prompts_df = make_gpt_prompts(campaign_name, system_prompt, uid=contact_id)
-else:
-    prompts_df = cache_gpt_prompts(campaign_name, system_prompt, uid=contact_id)
-
 if st.button("Generate"):
     with st.spinner("Generating..."):
         if use_udf_for_gpt:
+            prompts_df = make_gpt_prompts(campaign_name, system_prompt, uid=contact_id)
             prompts_responses_df = add_gpt_to_select(prompts_df)
             prompts_responses_df.write.save_as_table(
                 OUTPUT_TABLE_NAME, mode="append", column_order="name"
@@ -274,6 +255,7 @@ if st.button("Generate"):
                 st.markdown(row.EMAIL)
 
         else:
+            prompts_df = make_gpt_prompts(campaign_name, system_prompt, uid=contact_id).to_pandas()
             if len(prompts_df) > 1:
                 bar = st.progress(0)
             else:
@@ -298,7 +280,7 @@ if st.button("Generate"):
                     [prompts_df.loc[[contact_id]], emails.loc[[contact_id]]], axis=1
                 )
 
-                prompts_response["TIMESTAMP"] = datetime.datetime.now()
+                prompts_response["TIMESTAMP"] = datetime.datetime.utcnow()
                 prompts_response["TIMESTAMP"] = (
                     prompts_response["TIMESTAMP"]
                     .astype("datetime64[ns]")

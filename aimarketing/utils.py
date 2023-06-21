@@ -4,6 +4,21 @@ import json
 import requests
 import re
 
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)  # for exponential backoff
+
+
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
+def request_post_retry(url, headers, payload):
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    return response
+
+
+MAX_TOKENS = 300
+
 
 def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
     import _snowflake  # type: ignore
@@ -21,6 +36,7 @@ def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
             {"role": "user", "content": user_prompt},
         ],
         "stream": False,
+        "max_tokens": MAX_TOKENS,
     }
 
     headers = {
@@ -28,19 +44,7 @@ def submit_prompt_udf(system_prompt: str, user_prompt: str) -> str:
         "Authorization": "Bearer " + OPENAI_API_KEY,
     }
 
-    # retry until response is valid
-    retry = 0
-    while retry < 5:
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
-        if response.status_code == 200:
-            break
-        else:
-            print(f"Error: {response.status_code}")
-            print(response.text)
-            retry += 1
-            if retry == 5:
-                raise Exception("Failed to get response from OpenAI")
-
+    response = request_post_retry(url, headers, payload)
     full_reply_content = response.json()["choices"][0]["message"]["content"]
     formatted_reply = re.sub(r"\n+", "\n\n", full_reply_content, flags=re.MULTILINE)
     return formatted_reply
@@ -57,6 +61,7 @@ def submit_prompt(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
+        "max_tokens": MAX_TOKENS,
         "stream": use_streamlit,
     }
 
@@ -68,20 +73,7 @@ def submit_prompt(
         "Authorization": "Bearer " + OPENAI_API_KEY,
     }
 
-    # retry until response is valid
-    retry = 0
-    while retry < 5:
-        response = requests.post(
-            url, headers=headers, data=json.dumps(payload), stream=use_streamlit
-        )
-        if response.status_code == 200:
-            break
-        else:
-            print(f"Error: {response.status_code}")
-            print(response.text)
-            retry += 1
-            if retry == 5:
-                raise Exception("Failed to get response from OpenAI")
+    response = request_post_retry(url, headers, payload)
 
     if use_streamlit:
         import streamlit as st
